@@ -56,15 +56,11 @@ int UtPod::removeSong(Song const &s) {
 
 void UtPod::clearMemory() {
     SongNode* ptr = this->songs;
-    SongNode* ptrPrev;
-    while(ptr != NULL) {
-        ptrPrev = ptr;
-        ptr = ptr->next;
-        delete ptrPrev;
+    while(this->songs != NULL) {
+        ptr = this->songs;
+        this->songs = this->songs->next;
+        delete ptr;
     }
-    delete ptrPrev;
-    this->songs = NULL;
-    return;
 }
 
 int UtPod::numSongs() {

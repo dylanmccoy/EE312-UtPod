@@ -1,112 +1,156 @@
-/* utPod_driver.cpp
-Demo Driver for the UtPod.
-
-Roger Priebe
-EE 312 10/16/18
-
-This is a basic driver for the UtPod.
-
-You will want to do more complete testing.
-
-*/
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
-#include "song.h"
+#include <fstream>
 #include "UtPod.h"
-
+#include "song.h"
 using namespace std;
 
-int main(int argc, char *argv[])
-{
-    //cout << "Hello\n";
-    UtPod t;
-    
-    Song s1("Beatles", "Hey Jude1", 4);
-    int result = t.addSong(s1);
-    cout << "result = " << result << endl;
-    
-    t.showSongList();
 
-    //cout << "test3\n";
-    Song s2("Beatles", "Hey Jude2", 5);
-    result = t.addSong(s2);
-    //cout << "test4\n";
-    cout << "result = " << result << endl;
-    
-    t.showSongList();
-       
-    Song s3("Beatles", "Hey Jude3", 6);
-    result = t.addSong(s3);
-    cout << "result = " << result << endl;
-       
-    Song s4("Beatles", "Hey Jude4", 7);
-    result = t.addSong(s4);
-    cout << "result = " << result << endl;
-       
-    Song s5("Beatles", "Hey Jude5", 241);
-    result = t.addSong(s5);
-    cout << "add result = " << result << endl;
-    
-    t.showSongList();
-    cout << "sort" << endl;
-    t.sortSongList();
-    t.showSongList();
+int main(int argc, char *argv[]) {
+    cout << "File test - file:\t" << argv[1] << endl;
 
-    
+    ifstream testFile;
+    testFile.open(argv[1]);
+    if(testFile.is_open()) {
+        cout << "File opened. Begin tests." << endl;
 
-    result = t.removeSong(s2);
-    cout << "delete result = " << result << endl;
-  
-    result = t.removeSong(s3);
-    cout << "delete result = " << result << endl;
+        int memSize = 0;
+        if(argv[2] != NULL)
+            memSize = atoi(argv[2]);
 
-    t.showSongList();
-    
-    result = t.removeSong(s1);
-    cout << "delete result = " << result << endl;
- 
-    result = t.removeSong(s5);
-    cout << "delete result = " << result << endl;
-    
-    result = t.removeSong(s4);
-    cout << "delete result = " << result << endl;
-    
-    
-    t.showSongList();
-    
-    //result = t.addSong(s5);
-    cout << "add result = " << result << endl;
-    
-    t.showSongList();
-    cout << "memory = " << t.getRemainingMemory() << endl;
+        //construct the UtPod
+        UtPod t = UtPod(memSize);
 
-    t.addSong(s1);
-    t.addSong(s2);
-    t.addSong(s3);
-    t.addSong(s4);
-    //t.clearMemory();
-    t.shuffle();
-    cout << "hi\n";
-    t.showSongList();
-    t.shuffle();
-    cout << "hi2\n";
-    t.showSongList();
-    t.sortSongList();
-    t.showSongList();
-    t.clearMemory();
-    cout << "there should be nothing from here...\n";
-    t.showSongList();
-    cout << "to here\n;";
-    result = t.addSong(s1);
-    cout << result << endl;
-    cout << result << endl;
-    cout << result << endl;
-    result = t.addSong(s4);
-    cout << result << endl;
-    result = t.addSong(s5);
-    cout << result << endl;
-    t.sortSongList();
-    t.showSongList();
-    t.shuffle();
-    t.showSongList();
+        string line;
+        int i = 1;
+        //reads each line and parses for information.
+        while(getline(testFile, line)) {
+            try {
+                //cout << "Test " << i++ << " ------------------------" << endl;
+                string cmd = "";
+                string title = "";
+                string artist = "";
+                int size = 0;
+
+                //parse string into 4 and assign: cmd, title, artist, memory
+
+                string::size_type posBegin =  0, posEnd = 0, posTemp;
+                bool quote = false;
+                string::size_type len = 1;
+                string lineSplit[4];
+                int i = 0;
+
+                //split line on commas into array of strings
+                while(posEnd != string::npos && i < 4) {
+                    posEnd = line.find_first_of(',', posBegin);
+
+                    // Check for optional quotes
+                    if((posTemp = line.find_first_of('"', posBegin)) < posEnd) {
+                        posBegin = posTemp + 1;
+                        posEnd = line.find_first_of('"', posBegin);
+                        quote = true;
+                    }
+
+                    // If next comma or quote not found, read the whole string
+                    len = posEnd == string::npos ? string::npos : posEnd - posBegin;
+                    lineSplit[i] = line.substr(posBegin, len);
+
+                    posBegin = posEnd + 1;
+
+                    if(quote)
+                        posBegin++;
+                    quote = false;
+
+                    i++;
+                }
+
+
+                for(int i = 0; i < 4; i++) {
+                    if(lineSplit[i].c_str()[lineSplit[i].length() - 1] == '\r')
+                        lineSplit[i] = lineSplit[i].substr(0, lineSplit[i].length() - 1);
+                }
+
+                //assign arguments
+                cmd = lineSplit[0];
+                title = lineSplit[1];
+                artist = lineSplit[2];
+
+                if(lineSplit[3].length() != 0) {
+                    size = atoi(lineSplit[3].c_str());
+                }
+
+                int result = 0;
+
+                if(cmd == "add") {
+                    Song s(title, artist, size);
+                    result = t.addSong(s);
+                    if(result == 0)
+                        cout << "Song " << title << " has been added to the playlist." << endl;
+                    else
+                        cout << "Error:\t" << result << " while adding song " << title << " to playlist " << endl;
+
+                } else if(cmd == "rm") {
+                    Song s(title, artist, size);
+                    result = t.removeSong(s);
+                    if(result == 0)
+                        cout << "Song " << title << " has been removed from the playlist." << endl;
+                    else
+    		    cout << "Error:\t" << result << " while removing song " << title << " to playlist " << endl;
+
+                } else if(cmd == "shw") {
+                    cout << "Song playlist:" << endl;
+    		      cout << endl;
+                    t.showSongList();
+    		      cout << endl;
+
+                } else if(cmd == "srt") {
+                    t.sortSongList();
+                    cout << "UtPod has been sorted. Sorted playlist:" << endl;
+    		      cout << endl;
+                    t.showSongList();
+    		      cout << endl;
+
+                } else if(cmd == "shf") {
+                    t.shuffle();
+                    cout << "UtPod has been shuffled. Shuffled playlist:" << endl;
+    		          cout << endl;
+                    t.showSongList();
+    		          cout << endl;
+
+                } else if(cmd == "clr") {
+                    t.clearMemory();
+                    cout << "UtPod cleared." << endl;
+
+                } else if(cmd == "getTMem") {
+                    cout << "Total memory:\t" << t.getTotalMemory() << endl;
+
+                } else if(cmd == "getRMem") {
+                    cout << "Remaining memory:\t" << t.getRemainingMemory() << endl;
+
+                } else if(cmd == "cmt") {
+                    cout << "______________________________" << endl;
+                    cout << "\n|| " << title << " ||" << endl;
+
+                } else if(cmd == "end") {
+                    testFile.close();
+                    cout << "File closed. End of program execution." << endl;
+                    return 1;
+
+                } else {
+                    cout << "Invalid command. Moving to next line." << endl;
+                }
+            } catch (const std::exception& e) {
+                std::cout << "<<Exception>> " << e.what() << endl;
+            }
+        }
+
+        testFile.close();
+        cout << "File closed. End of program execution." << endl;
+        return 1;
+
+    } else {
+        cout << "File err. Did not open." << endl;
+        return 0;
+    }
 }
